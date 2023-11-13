@@ -25,6 +25,9 @@ const server = http.createServer((req, res)=>{
         break;
         case '/authorize': auth(res)
         break;
+        case '/callback': res.writeHead(302,{
+            'Location':'/'
+        })
         default: res.writeHead(404,{'Content-type':'text/plain'});
                  res.end("404")
     }
