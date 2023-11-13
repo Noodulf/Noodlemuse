@@ -1,4 +1,5 @@
 const http = require('http');
+const url = require('url');
 // const fetch= require('node-fetch');
 
 // const encAuth = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
@@ -6,7 +7,7 @@ const CLIENT_SECRET='70db1e28e4444e1198f2b9fd9484e8e1';
 
 function auth(res){
     const CLIENT_ID='1969d396ab164fb7834ca366b2ae4ec8';
-    const redirectUri = 'http://localhost:3000/';
+    const redirectUri = 'http://localhost:3000/callback';
     const scopes = 'user-read-private user-read-email playlist-read-private';
     const authUrl=`https://accounts.spotify.com/authorize?response_type=code&client_id=${CLIENT_ID}&scope=${encodeURIComponent(scopes)}&redirect_uri=${encodeURIComponent(redirectUri)}`
     res.writeHead(302,{
@@ -16,18 +17,22 @@ function auth(res){
 }
 
 const server = http.createServer((req, res)=>{
-    const {url, method}= req;
+    const { pathname, query } = url.parse(req.url, true);
     let content= "This text was processed successfully"
-    switch (url){
+    switch (pathname){
         case '/': res.writeHead(200,{'Content-type':'text/plain'})
         console.log("Home page");
         res.end('Homepage')
         break;
         case '/authorize': auth(res)
         break;
-        case '/callback': res.writeHead(302,{
+        case '/callback': console.log("callback initiated");
+            console.log("Query parameters:", query)
+            res.writeHead(302,{
             'Location':'/'
         })
+        res.end()
+        break;
         default: res.writeHead(404,{'Content-type':'text/plain'});
                  res.end("404")
     }
