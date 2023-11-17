@@ -1,7 +1,17 @@
 const http = require('http');
 const url = require('url');
-import fetch from 'node-fetch'
-const querystring = require('querystring');
+
+async function startServer() {
+    let fetch;
+    try {
+        // Dynamic import of the ES module
+        const fetchModule = await import('./fetchModule.mjs');
+        fetch = fetchModule.default;
+    } catch (err) {
+        console.error(err);
+        // Handle error if dynamic import fails
+    }
+// const querystring = require('querystring');
 
 
 function secret() {
@@ -88,17 +98,6 @@ function auth(res) {
 
 async function getTokenData(code) {
 
-    const options = {
-        hostname: 'accounts.spotify.com',
-        path: '/api/token',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': 'Basic ' + (Buffer.from(secrets.CLIENT_ID + ':' + secrets.CLIENT_SECRET).toString('base64'))
-        }
-
-    }
-
     const searchParams = new URLSearchParams();
     searchParams.append('code', code);
     searchParams.append('redirect_uri', secrets.redirectUri);
@@ -106,36 +105,28 @@ async function getTokenData(code) {
 
     const postData = searchParams.toString();
 
-    const req = http.request(options, (response) => {
-        let data = Buffer.from([]);
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': 'Basic ' + (Buffer.from(secrets.CLIENT_ID + ':' + secrets.CLIENT_SECRET).toString('base64'))
+        },
+        body: postData
 
-        response.on('data', (chunk) => {
-            data = Buffer.concat([data, chunk]);
-            console.log("chunk:", chunk)
-            resolve(data)
-        });
+    }
 
-        response.on('end', () => {
-            try {
-                console.log("End event log:", data);
-                resolve(data);
-                const tokenData = data;
-            } catch (error) {
-                reject(error);
-            }
-        });
+    try {
+        const response = await fetch('https://accounts.spotify.com/api/token', options);
 
-        response.on('error', (error) => {
-            reject(error);
-        });
-    });
+        if (!response.ok) {
+            throw new Error('Failed to retrieve token');
+        }
 
-    req.on('error', (error) => {
-        reject(error);
-    });
-
-    req.write(postData);
-    req.end();
+        const tokenData = await response.json();
+        return tokenData;
+    } catch (error) {
+        throw new Error('Error fetching token: ' + error.message);
+    }
 
 }
 
@@ -159,12 +150,6 @@ function accToken(code, res) {
             // Handle errors here
         });
 }
-
-
-
-
-
-
 
 
 const server = http.createServer((req, res) => {
@@ -196,3 +181,6 @@ const server = http.createServer((req, res) => {
 server.listen(3000, () => {
     console.log("Listening");
 })
+
+}
+startServer();
