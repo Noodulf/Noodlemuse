@@ -1,6 +1,6 @@
 const http = require('http');
 const url = require('url');
-// const fetch = require('node-fetch');
+import fetch from 'node-fetch'
 const querystring = require('querystring');
 
 
@@ -28,57 +28,142 @@ function auth(res) {
     res.writeHead(302, {
         'Location': authUrl
     });
-    res.end("Authorization worked");
+    res.end();
 }
 
 
-function accToken(code) {
+
+// function accToken(code) {
+
+//     const options = {
+//         hostname: 'accounts.spotify.com',
+//         path: '/api/token',
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/x-www-form-urlencoded',
+//             'Authorization': 'Basic ' + (Buffer.from(secrets.CLIENT_ID + ':' + secrets.CLIENT_SECRET).toString('base64'))
+//         }
+
+//     }
+
+//     const postData = querystring.stringify({
+//         code: code,
+//         redirect_uri: secrets.redirectUri,
+//         grant_type: 'authorization_code'
+//     })
+//     const req = http.request(options,(response)=>{
+//         let data='';
+
+//         response.on('data',(chunk)=>{
+//             data+=chunk;
+//             console.log('Received data chunk:', chunk);
+//         })
+
+//         // response.on('end',()=>{
+//         //     const tokenData= JSON.parse(data);
+//         //     console.log('Token data is:',tokenData)
+//         // })
+
+//         response.on('end', () => {
+//             try {
+//                 // const tokenData = JSON.parse(data);
+//                 console.log('Token data is:', data);
+//             } catch (error) {
+//                 console.error('Error parsing JSON:', error);
+//                 // Handle JSON parsing error here
+//             }
+//         });
+//     })
+
+//     req.on('error',(error)=>{
+//         console.log("request error:",error)
+//     })
+
+//     req.write(postData);
+//     req.end();
+
+// }
+
+
+
+async function getTokenData(code) {
 
     const options = {
         hostname: 'accounts.spotify.com',
         path: '/api/token',
         method: 'POST',
         headers: {
-            'content-type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
             'Authorization': 'Basic ' + (Buffer.from(secrets.CLIENT_ID + ':' + secrets.CLIENT_SECRET).toString('base64'))
         }
 
     }
 
-    const postData = querystring.stringify({
-        code: code,
-        redirect_uri: secrets.redirectUri,
-        grant_type: 'authorization_code'
-    })
-    const req = http.request(options,(response)=>{
-        let data='';
-        
-        response.on('data',(chunk)=>{
-            data+=chunk;
-            console.log('Received data chunk:', chunk);
-        })
+    const searchParams = new URLSearchParams();
+    searchParams.append('code', code);
+    searchParams.append('redirect_uri', secrets.redirectUri);
+    searchParams.append('grant_type', 'authorization_code');
 
-        // response.on('end',()=>{
-        //     const tokenData= JSON.parse(data);
-        //     console.log('Token data is:',tokenData)
-        // })
+    const postData = searchParams.toString();
+
+    const req = http.request(options, (response) => {
+        let data = Buffer.from([]);
+
+        response.on('data', (chunk) => {
+            data = Buffer.concat([data, chunk]);
+            console.log("chunk:", chunk)
+            resolve(data)
+        });
 
         response.on('end', () => {
             try {
-                // const tokenData = JSON.parse(data);
-                console.log('Token data is:', data);
+                console.log("End event log:", data);
+                resolve(data);
+                const tokenData = data;
             } catch (error) {
-                console.error('Error parsing JSON:', error);
-                // Handle JSON parsing error here
+                reject(error);
             }
-        });        
-        
-    })
+        });
+
+        response.on('error', (error) => {
+            reject(error);
+        });
+    });
+
+    req.on('error', (error) => {
+        reject(error);
+    });
 
     req.write(postData);
     req.end();
 
 }
+
+function accToken(code, res) {
+    getTokenData(code)
+        .then((tokenData) => {
+            // Perform actions with tokenData here before redirecting
+            console.log('Token data:', tokenData);
+
+            res.writeHead(302, {
+                'Location': '/'
+            })
+            res.end()
+            // Redirect to homepage or perform other actions
+            // For example:
+            // res.writeHead(302, { 'Location': '/' });
+            // res.end();
+        })
+        .catch((error) => {
+            console.error('Error getting token data:', error);
+            // Handle errors here
+        });
+}
+
+
+
+
+
 
 
 
@@ -95,11 +180,11 @@ const server = http.createServer((req, res) => {
         case '/callback': console.log("callback initiated");
             console.log("Query parameters:", query)
             const code = query.code;
-            accToken(code);
-            res.writeHead(302, {
-                'Location': '/'
-            })
-            res.end()
+            accToken(code, res);
+            // res.writeHead(302, {
+            //     'Location': '/'
+            // })
+            // res.end()
             break;
         default: res.writeHead(404, { 'Content-type': 'text/plain' });
             console.log("404")
