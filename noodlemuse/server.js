@@ -11,8 +11,6 @@ async function startServer() {
         console.error(err);
         // Handle error if dynamic import fails
     }
-// const querystring = require('querystring');
-
 
 function secret() {
     const CLIENT_ID = '1969d396ab164fb7834ca366b2ae4ec8';
@@ -133,17 +131,12 @@ async function getTokenData(code) {
 function accToken(code, res) {
     getTokenData(code)
         .then((tokenData) => {
-            // Perform actions with tokenData here before redirecting
             console.log('Token data:', tokenData);
 
             res.writeHead(302, {
                 'Location': '/'
             })
             res.end()
-            // Redirect to homepage or perform other actions
-            // For example:
-            // res.writeHead(302, { 'Location': '/' });
-            // res.end();
         })
         .catch((error) => {
             console.error('Error getting token data:', error);
@@ -154,7 +147,6 @@ function accToken(code, res) {
 
 const server = http.createServer((req, res) => {
     const { pathname, query } = url.parse(req.url, true);
-    let content = "This text was processed successfully"
     switch (pathname) {
         case '/': res.writeHead(200, { 'Content-type': 'text/plain' })
             console.log("Home page");
@@ -166,10 +158,6 @@ const server = http.createServer((req, res) => {
             console.log("Query parameters:", query)
             const code = query.code;
             accToken(code, res);
-            // res.writeHead(302, {
-            //     'Location': '/'
-            // })
-            // res.end()
             break;
         default: res.writeHead(404, { 'Content-type': 'text/plain' });
             console.log("404")
