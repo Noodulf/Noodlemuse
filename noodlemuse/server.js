@@ -1,16 +1,9 @@
-const http = require('http');
-const url = require('url');
+import http from 'http';
+import url from 'url';
+import express from 'express';
+import fetch from 'node-fetch';
 
-async function startServer() {
-    let fetch;
-    try {
-        // Dynamic import of the ES module
-        const fetchModule = await import('./fetchModule.mjs');
-        fetch = fetchModule.default;
-    } catch (err) {
-        console.error(err);
-        // Handle error if dynamic import fails
-    }
+const app= express();
 
 function secret() {
     const CLIENT_ID = '1969d396ab164fb7834ca366b2ae4ec8';
@@ -38,60 +31,6 @@ function auth(res) {
     });
     res.end();
 }
-
-
-
-// function accToken(code) {
-
-//     const options = {
-//         hostname: 'accounts.spotify.com',
-//         path: '/api/token',
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/x-www-form-urlencoded',
-//             'Authorization': 'Basic ' + (Buffer.from(secrets.CLIENT_ID + ':' + secrets.CLIENT_SECRET).toString('base64'))
-//         }
-
-//     }
-
-//     const postData = querystring.stringify({
-//         code: code,
-//         redirect_uri: secrets.redirectUri,
-//         grant_type: 'authorization_code'
-//     })
-//     const req = http.request(options,(response)=>{
-//         let data='';
-
-//         response.on('data',(chunk)=>{
-//             data+=chunk;
-//             console.log('Received data chunk:', chunk);
-//         })
-
-//         // response.on('end',()=>{
-//         //     const tokenData= JSON.parse(data);
-//         //     console.log('Token data is:',tokenData)
-//         // })
-
-//         response.on('end', () => {
-//             try {
-//                 // const tokenData = JSON.parse(data);
-//                 console.log('Token data is:', data);
-//             } catch (error) {
-//                 console.error('Error parsing JSON:', error);
-//                 // Handle JSON parsing error here
-//             }
-//         });
-//     })
-
-//     req.on('error',(error)=>{
-//         console.log("request error:",error)
-//     })
-
-//     req.write(postData);
-//     req.end();
-
-// }
-
 
 
 async function getTokenData(code) {
@@ -169,6 +108,3 @@ const server = http.createServer((req, res) => {
 server.listen(3000, () => {
     console.log("Listening");
 })
-
-}
-startServer();
